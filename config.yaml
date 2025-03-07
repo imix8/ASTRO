@@ -1,0 +1,7 @@
+path: C:/Users/yslee/OneDrive/Desktop/Georgia Tech/Spring 2025/datasets/Images  # dataset root dir
+train: images/train  # train images (relative to 'path')
+val: images/train  # val images (relative to 'path')
+
+# Classes
+names:
+  0: Plastic
