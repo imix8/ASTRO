@@ -1,5 +1,0 @@
-plastic_bag
-aluminum_can
-plastic_bottle
-paper_cup
-glass_bottle
