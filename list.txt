@@ -1,5 +1,5 @@
-plastic_bag
-aluminum_can
 plastic_bottle
+aluminum_can
 paper_cup
-glass_bottle
+face_mask
+
