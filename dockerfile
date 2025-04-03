@@ -1,31 +1,29 @@
-# Use an ARM64-compatible NVIDIA CUDA base image with CUDA 12.6 runtime
-FROM nvidia/cuda:12.6.0-runtime-ubuntu20.04
+# Use the official PyTorch GPU container with CUDA 12.6 support.
+# Replace the tag with the correct one if needed. Ensure that the image supports ARM64.
+FROM pytorch/pytorch:2.0.1-cuda12.6-cudnn8-runtime
 
-# Install system dependencies
+# Set the working directory
+WORKDIR /app
+
+# Install any additional system dependencies required by your application.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    python3-dev \
-    build-essential \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
-WORKDIR /app
+# Upgrade pip if needed
+RUN pip install --upgrade pip
 
-# Upgrade pip
-RUN python3 -m pip install --upgrade pip
-
-# Copy requirements file and install Python dependencies.
-# The --extra-index-url points to the PyTorch wheels built for CUDA 12.6.
+# Copy the requirements file and install Python dependencies.
+# Since the base image already includes PyTorch, you can omit it from requirements.txt if desired.
 COPY requirements.txt /app/requirements.txt
-RUN python3 -m pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code.
+# Copy the application code into the container.
 COPY . /app
 
-# Set the default command. Change the script name if needed.
-CMD ["python3", "image_predict.py"]
+# Set the default command. Adjust the script as needed (e.g., image_predict.py, video_predict.py, etc.).
+CMD ["python", "image_predict.py"]
+CMD ["python", "webcam_predict.py"]
