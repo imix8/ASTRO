@@ -1,6 +1,6 @@
 # Use the official PyTorch GPU container with CUDA 12.6 support.
 # Replace the tag with the correct one if needed. Ensure that the image supports ARM64.
-FROM pytorch/conda-builder:cuda12.6-66a3c249ae3f9e136165ad17b90d619e713e9be1
+FROM nvcr.io/nvidia/l4t-pytorch:r32.7.1-pth2.0-py3
 
 # Set the working directory
 WORKDIR /app
