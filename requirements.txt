@@ -1,0 +1,11 @@
+# Specify PyTorch and torchvision versions built with CUDA 12.6.
+# Note: Confirm that these wheels are available for ARM64; if not, you might need to build from source.
+torch==2.0.1+cu126
+torchvision==0.15.2+cu126
+--extra-index-url https://download.pytorch.org/whl/cu126
+
+numpy
+matplotlib
+opencv-python
+supervision
+rfdetr
