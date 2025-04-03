@@ -3,6 +3,10 @@ import supervision as sv
 import numpy as np
 from rfdetr import RFDETRBase
 import matplotlib.pyplot as plt
+import torch
+
+device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(device)
 
 # Load dataset using the COCO annotations.
 ds = sv.DetectionDataset.from_coco(
