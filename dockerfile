@@ -36,6 +36,18 @@ RUN apt-get update && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Build and install CMake 3.18.4
+WORKDIR /tmp
+RUN wget https://github.com/Kitware/CMake/archive/refs/tags/v3.18.4.tar.gz && \
+    tar -xzvf v3.18.4.tar.gz && \
+    cd CMake-3.18.4 && \
+    ./bootstrap && \
+    make -j$(nproc) && \
+    make install && \
+    cd / && \
+    rm -rf /tmp/*
+
+# Build and install Python 3.9.18
 ARG PYTHON_VERSION=3.9.18 # Use a specific recent 3.9.x version
 WORKDIR /tmp
 RUN wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
@@ -51,15 +63,18 @@ RUN wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VER
     cd / && \
     rm -rf /tmp/*
 
+# Set build arguments for PyTorch and Jetson Nano support
 ARG PYTORCH_VERSION=v1.13.0 # Using older version likely more compatible with JP4.4 build tools
 ARG TORCH_CUDA_ARCH_LIST="5.3" # Compute Capability for Jetson Nano
 
+# Upgrade pip and prepare for PyTorch build
 RUN /usr/local/bin/pip3.9 install --no-cache-dir --upgrade pip setuptools wheel
 
+# Clone PyTorch repository
 WORKDIR /opt
-
 RUN git clone --recursive --branch ${PYTORCH_VERSION} https://github.com/pytorch/pytorch.git
 
+# Install PyTorch requirements and fix potential dependency issues
 RUN cd pytorch && \
     /usr/local/bin/pip3.9 install --no-cache-dir -r requirements.txt && \
     # Pin NumPy to a version compatible with PyTorch 1.10.x to avoid C API issues
@@ -67,18 +82,18 @@ RUN cd pytorch && \
     # Fix for setup.py issue with setuptools >= 59.6.0 (common on newer pip)
     /usr/local/bin/pip3.9 install --no-cache-dir "setuptools<59.6.0"
 
+# Build and install PyTorch with the necessary environment variables
 RUN cd pytorch && \
-    # Set environment variables for build
-    export PYTORCH_BUILD_VERSION=${PYTORCH_VERSION%.*} && \
-    export PYTORCH_BUILD_NUMBER=1 && \
-    # Set build options for Jetson Nano
     export PYTORCH_BUILD_VERSION=$(echo "${PYTORCH_VERSION}" | sed 's/^v//' | cut -d. -f1,2) && \
+    export PYTORCH_BUILD_NUMBER=1 && \
     export USE_NCCL=0 && \
     export USE_QNNPACK=1 && \
     export USE_PYTORCH_QNNPACK=1 && \
     export USE_CUDA=1 && \
+    export TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST}" && \
     export BUILD_TEST=0 && \
     export VERBOSE=1 && \
+    export MAX_JOBS=8 && \
     /usr/local/bin/python3.9 setup.py install
 
 # RUN /usr/local/bin/pip3.9 install --no-cache-dir \
