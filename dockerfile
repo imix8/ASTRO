@@ -96,30 +96,70 @@ RUN cd pytorch && \
     export MAX_JOBS=8 && \
     /usr/local/bin/python3.9 setup.py install
 
-# RUN /usr/local/bin/pip3.9 install --no-cache-dir \
-#     matplotlib \
-#     supervision \
-#     rfdetr && \
-#     rm -rf /root/.cache/pip
+# Clone and build torchvision 0.14.0 from source
+WORKDIR /opt
 
-# WORKDIR /workspace
+# Install newer CMake version to support torchvision
+ARG CMAKE_MIN_VERSION=3.22 # Minimum version needed
+RUN /usr/local/bin/pip3.9 install --no-cache-dir "cmake>=${CMAKE_MIN_VERSION}"
 
-# COPY image_predict.py /workspace/
-# COPY logs/ /workspace/logs/
-# COPY dataset/ /workspace/dataset/
+ARG TORCHVISION_VERSION=v0.14.0
+WORKDIR /opt
+RUN git clone --recursive --branch ${TORCHVISION_VERSION} --depth 1 https://github.com/pytorch/vision.git vision
+RUN cd vision && \
+    export BUILD_VERSION=$(echo "${TORCHVISION_VERSION}" | sed 's/^v//') && \
+    # export MAX_JOBS=$(nproc) && \
+    export MAX_JOBS=8 && \
+    /usr/local/bin/python3.9 setup.py install && \
+    cd / && rm -rf /opt/vision
 
-# # Verify PyTorch install and CUDA availability from Python 3.9
-# RUN /usr/local/bin/python3.9 -c "import torch; print(f'PyTorch Version: {torch.__version__}'); print(f'CUDA Available: {torch.cuda.is_available()}'); \
-#     has_cuda = torch.cuda.is_available(); \
-#     print(f'CUDA Version: {torch.version.cuda if has_cuda else "N/A"}'); \
-#     print(f'cuDNN Version: {torch.backends.cudnn.version() if has_cuda else "N/A"}'); \
-#     print(f'Device Count: {torch.cuda.device_count() if has_cuda else "N/A"}'); \
-#     try: \
-#     if has_cuda and torch.cuda.device_count() > 0: \
-#     print(f'Current Device: {torch.cuda.current_device()}'); \
-#     print(f'Device Name: {torch.cuda.get_device_name(torch.cuda.current_device())}'); \
-#     except Exception as e: print(f'Could not get device info: {e}')"
+# Cleanup torch build files
+RUN rm -rf /opt/pytorch
 
-# RUN rm -rf /opt/pytorch
+# Install rfdetr dependencies separately to avoid onnx
+RUN /usr/local/bin/pip3.9 install --no-cache-dir \
+    supervision \
+    matplotlib \
+    cython \
+    pycocotools \
+    "torch==1.13.0" \
+    "torchvision==0.14.0" \
+    fairscale \
+    scipy \
+    timm \
+    tqdm \
+    numpy \
+    accelerate \
+    transformers \
+    peft \
+    ninja \
+    einops \
+    pandas \
+    pylabel \
+    polygraphy \
+    open_clip_torch \
+    rf100vl \
+    pydantic && \
+    rm -rf /root/.cache/pip
 
-CMD ["/usr/local/bin/python3.9"]
+# Install rfdetr without dependencies
+RUN export CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5" && \
+    /usr/local/bin/pip3.9 install --no-cache-dir --no-deps \
+    rfdetr && \
+    rm -rf /root/.cache/pip
+
+# Install Jetson.GPIO
+RUN git clone https://github.com/NVIDIA/jetson-gpio.git /opt/Jetson.GPIO && \
+    cd /opt/Jetson.GPIO && \
+    /usr/local/bin/python3.9 setup.py install && \
+    cd / && rm -rf /opt/Jetson.GPIO
+
+WORKDIR /workspace
+
+# Copy necessary files
+COPY image_predict.py /workspace/
+COPY webcam_predict.py /workspace/
+COPY logs/ /workspace/logs/
+COPY dataset/ /workspace/dataset/
+
+CMD ["bash"]
