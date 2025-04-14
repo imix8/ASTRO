@@ -1,0 +1,60 @@
+#include <Servo.h>
+
+// Servo setup
+Servo servo1;
+Servo servo2;
+Servo servo3;
+
+// Stepper control pins
+const int stepPin = 3;
+const int dirPin  = 4;
+const int enaPin  = 5;
+
+void setup() {
+  // Stepper pin modes
+  pinMode(stepPin, OUTPUT);
+  pinMode(dirPin, OUTPUT);
+  pinMode(enaPin, OUTPUT);
+
+  // Initialize stepper state
+  digitalWrite(dirPin, HIGH);   // Set direction
+  digitalWrite(enaPin, LOW);    // Enable driver (LOW = enabled)
+
+  // Attach servos
+  servo1.attach(9);
+  servo2.attach(10);
+  servo3.attach(11);
+
+  // Set initial servo positions
+  servo1.write(0);
+  servo2.write(0);
+  servo3.write(0);
+
+  Serial.begin(9600);
+  Serial.println("Starting sequence...");
+}
+
+void loop() {
+  unsigned long startTime = millis();
+
+  // Run stepper for 3 seconds (3,000 ms)
+  while (millis() - startTime < 3000) {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(500);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(500);
+
+    // At 0.5 seconds, move servo1
+    if (millis() - startTime >= 500 && millis() - startTime < 510) {
+      servo1.write(180); // Move to 180°
+      Serial.println("Servo1 moved at 0.5s");
+    }
+  }
+
+  // After stepper stops (after 3s), move servo2 and servo3
+  servo2.write(90);  // Move to 90°
+  servo3.write(45);  // Move to 45°
+  Serial.println("Stepper stopped. Servo2 and Servo3 moved.");
+
+  while (true); // End of sequence
+}
