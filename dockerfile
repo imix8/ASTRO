@@ -128,7 +128,7 @@ RUN /usr/local/bin/pip3.9 install --no-cache-dir \
     scipy \
     timm \
     tqdm \
-    numpy \
+    "numpy<1.22" \
     accelerate \
     transformers \
     peft \
@@ -158,7 +158,8 @@ WORKDIR /workspace
 
 # Copy necessary files
 COPY image_predict.py /workspace/
-COPY webcam_predict.py /workspace/
+COPY webcam_predict_jetson.py /workspace/
+COPY webcam_predict_laptop.py /workspace/
 COPY logs/ /workspace/logs/
 COPY dataset/ /workspace/dataset/
 
