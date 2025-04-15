@@ -1,50 +1,68 @@
-import supervision as sv
-import numpy as np
-from rfdetr import RFDETRBase
+import cv2
+from ultralytics import YOLO
+import time
 
-# Load dataset using the COCO annotations.
-ds = sv.DetectionDataset.from_coco(
-    images_directory_path="./dataset/valid",
-    annotations_path="./dataset/valid/_annotations.coco.json",
-)
+# --- Configuration ---
+MODEL_NAME = 'runs/detect/train/weights/best.pt'
 
-model = RFDETRBase(pretrain_weights="./logs/checkpoint_best_total.pth")
+# --- Load the YOLO model ---
+try:
+    model = YOLO(MODEL_NAME)
+    print(f"Successfully loaded model: {MODEL_NAME}")
+except Exception as e:
+    print(f"Error loading YOLO model: {e}")
+    print("Ensure you have internet access for the first run to download the model,")
+    print("or place the model file in the correct directory if already downloaded.")
+    exit()
 
-def callback(frame, index):
-    detections = model.predict(frame, threshold=0.8)
+# --- Initialize Webcam ---
+print("Starting webcam...")
+cap = cv2.VideoCapture(0) # 0 is usually the default webcam
 
-    if isinstance(frame, np.ndarray):
-        resolution_wh = (frame.shape[1], frame.shape[0])
-    else:
-        resolution_wh = frame.size
-        
-    # Calculate optimal text scale and line thickness based on the image resolution.
-    text_scale = sv.calculate_optimal_text_scale(resolution_wh=resolution_wh)
-    thickness = sv.calculate_optimal_line_thickness(resolution_wh=resolution_wh)
+if not cap.isOpened():
+    print("Error: Could not open webcam.")
+    exit()
 
-    # Create annotators for bounding boxes and labels.
-    bbox_annotator = sv.BoxAnnotator(thickness=thickness)
-    label_annotator = sv.LabelAnnotator(
-        text_color=sv.Color.BLACK,
-        text_scale=text_scale,
-        text_thickness=thickness,
-        smart_position=True
-    )
+print("Webcam started. Press 'q' to quit.")
 
-    # Generate detection labels.
-    detections_labels = [
-        f"{ds.classes[class_id]} {confidence:.2f}"
-        for class_id, confidence in zip(detections.class_id, detections.confidence)
-    ]
+prev_time = 0
 
-    # Annotate the image with bounding boxes and labels.
-    detections_image = frame.copy()
-    detections_image = bbox_annotator.annotate(detections_image, detections)
-    detections_image = label_annotator.annotate(detections_image, detections, detections_labels)
-    return detections_image
+# --- Main Loop ---
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("Error: Failed to grab frame.")
+        break
 
-process_video(
-    source_path="./video/",
-    target_path="./video/",
-    callback=callback
-)
+    # --- Perform Inference using Ultralytics ---
+    results = model(frame, verbose=False) # verbose=False silences Ultralytics console output per frame
+
+    # --- Process and Draw Results ---
+    # `results[0].plot()` returns the frame with bounding boxes drawn directly
+    annotated_frame = results[0].plot()
+
+    # --- Calculate and Display FPS ---
+    current_time = time.time()
+    if prev_time > 0: # Avoid division by zero on the first frame
+      try:
+          fps = 1 / (current_time - prev_time)
+          cv2.putText(annotated_frame, f"FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 255), 2)
+      except ZeroDivisionError:
+          pass # Should not happen after the first frame check, but added for safety
+    prev_time = current_time
+
+
+    # --- Display the Resulting Frame ---
+    cv2.imshow("YOLOv8 Object Detection", annotated_frame)
+
+    # --- Exit Condition ---
+    key = cv2.waitKey(1) & 0xFF # Wait 1ms for a key press
+    if key == ord('q'):        # Press 'q' to quit
+        print("Exiting...")
+        break
+
+# --- Cleanup ---
+print("Releasing resources...")
+cap.release()
+cv2.destroyAllWindows()
+print("Done.")
