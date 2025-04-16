@@ -3,14 +3,12 @@ from ultralytics import YOLO
 
 
 
-from gpiozero import PWMLED
+#vfrom gpiozero import PWMLED
 from time import sleep
 
-led = PWMLED(14)
-led2 = PWMLED(15)
 
-led.value = 0
-led2.value = 0
+int led = 0
+int led2 = 0
 
 
 # Load YOLO model
@@ -89,18 +87,18 @@ while True:
             
             if c_left < cx < c_right and c_top < cy < c_bottom:
                 cv2.putText(frame, "In Center", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                led.value = 0
-                led2.value = 0
+                #led = 0
+                #led = 0
             else:
                 cv2.putText(frame, "Tracking", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                led.value = 1
-                led2.value = 1
+                #led = 1
+                #led = 1
     
             
         else:
             cv2.putText(frame, "Lost", (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-            led.value = 0
-            led2.value = 0
+            #led = 0
+            #led = 0
             
     cv2.imshow("Tracking", frame)
     
