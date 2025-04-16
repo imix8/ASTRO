@@ -45,8 +45,7 @@ def run_detection():
         ]
 
         # Annotate the image with bounding boxes and labels.
-        detections_image = frame.copy()
-        detections_image = bbox_annotator.annotate(detections_image, detections)
+        detections_image = bbox_annotator.annotate(frame.copy(), detections)
         detections_image = label_annotator.annotate(detections_image, detections, detections_labels)
 
         cv2.imshow("Webcam", detections_image)
