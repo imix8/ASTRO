@@ -23,7 +23,9 @@ class_names = model.names if hasattr(model, 'names') else {}
 
 # --- Initialize Webcam ---
 print("Starting webcam...")
-cap = cv2.VideoCapture("/dev/video0")
+# cap = cv2.VideoCapture("/dev/video0")
+cap = cv2.VideoCapture(0)
+
 if not cap.isOpened():
     print("Error: Could not open webcam.")
     exit()
@@ -56,7 +58,7 @@ while True:
 
             if w > 5 and h > 5:
                 print(f"[INFO] Initializing tracker with box: x={x1}, y={y1}, w={w}, h={h}")
-                tracker = cv2.legacy.TrackerCSRT_create()
+                tracker = cv2.TrackerCSRT_create()
                 tracker.init(frame, (x1, y1, w, h))
                 confidence = float(box.conf[0])
                 class_id = int(box.cls[0])
