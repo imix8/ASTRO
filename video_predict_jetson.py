@@ -1,87 +1,113 @@
 import cv2
 import time
 import torch
+import numpy as np
 from ultralytics import RTDETR
 
-# --- CUDA Check ---
+# --- CUDA Setup ---
 print(f"CUDA Available: {torch.cuda.is_available()}")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
-
-# Prevent automatic CUDA memory release
-torch.cuda.empty_cache = lambda: None
+torch.cuda.empty_cache = lambda: None  # Prevent cleanup between frames
 
 # --- Configuration ---
 MODEL_NAME = 'runs/detect/train/weights/best.pt'
-BATCH_SIZE = 2
-IMAGE_SIZE = 960  # Increase resolution to use more memory
+IMAGE_SIZE = 960
 
-# --- Load the RTDETR model ---
-try:
-    model = RTDETR(MODEL_NAME)
-    model.to(device)
-    model.model.float()  # Force float32 instead of FP16
-    print(f"Successfully loaded model: {MODEL_NAME}")
-except Exception as e:
-    print(f"Error loading RTDETR model: {e}")
-    print("Ensure you have internet access for the first run to download the model,")
-    print("or place the model file in the correct directory if already downloaded.")
-    exit()
+# --- Load Model ---
+model = RTDETR(MODEL_NAME)
+model.to(device)
+
+# Class name lookup
+class_names = model.names if hasattr(model, 'names') else {}
 
 # --- Initialize Webcam ---
 print("Starting webcam...")
-cap = cv2.VideoCapture("/dev/video0")  # Corrected path
-
+cap = cv2.VideoCapture("/dev/video0")
 if not cap.isOpened():
     print("Error: Could not open webcam.")
     exit()
-
 print("Webcam started. Press 'q' to quit.")
-prev_time = 0
 
-# --- Main Loop ---
+tracker = None
+init_once = False
+lost_counter = 0
+max_lost_frames = 30
+confidence = 0
+class_name = "Unknown"
+
 while True:
-    ret, frame = cap.read()
-    if not ret:
+    success, frame = cap.read()
+    if not success:
         print("Error: Failed to grab frame.")
         break
 
-    # --- Simulate batch input ---
-    frames = [frame for _ in range(BATCH_SIZE)]
+    detections_image = frame.copy()
 
-    # --- Perform Inference using Ultralytics ---
-    results = model(frames, imgsz=IMAGE_SIZE, device=device, verbose=False)
+    if not init_once:
+        # Run inference with Ultralytics RTDETR
+        results = model(frame, imgsz=IMAGE_SIZE, device=device, verbose=False)
+        boxes = results[0].boxes
 
-    # --- Process and Draw Results for First Frame Only ---
-    annotated_frame = results[0].plot()
+        if boxes is not None and len(boxes) > 0:
+            box = boxes[0]
+            x1, y1, x2, y2 = map(int, box.xyxy.tolist()[0])
+            w, h = x2 - x1, y2 - y1
 
-    # --- Calculate and Display FPS ---
-    current_time = time.time()
-    if prev_time > 0:
-        try:
-            fps = 1 / (current_time - prev_time)
-            cv2.putText(annotated_frame, f"FPS: {fps:.2f}", (10, 30),
-                        cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 255), 2)
-        except ZeroDivisionError:
-            pass
-    prev_time = current_time
+            if w > 5 and h > 5:
+                print(f"[INFO] Initializing tracker with box: x={x1}, y={y1}, w={w}, h={h}")
+                tracker = cv2.legacy.TrackerCSRT_create()
+                tracker.init(frame, (x1, y1, w, h))
+                confidence = float(box.conf[0])
+                class_id = int(box.cls[0])
+                class_name = class_names.get(class_id, "Unknown")
+                init_once = True
 
-    # --- Display the Resulting Frame ---
-    cv2.imshow("RTDETR Object Detection", annotated_frame)
+                # Draw initial detection
+                cv2.rectangle(detections_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                label = f"{class_name} {confidence:.2f}"
+                cv2.putText(detections_image, label, (x1, y1 - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+            else:
+                print("[WARN] Ignoring detection with invalid size")
+    else:
+        success, box = tracker.update(frame)
 
-    # --- Print GPU Memory Usage ---
-    allocated = torch.cuda.memory_allocated() / 1024**2
-    reserved = torch.cuda.memory_reserved() / 1024**2
-    print(f"GPU Memory: Allocated = {allocated:.2f} MB | Reserved = {reserved:.2f} MB")
+        if success:
+            x, y, w, h = [int(v) for v in box]
+            frame_h, frame_w = frame.shape[:2]
 
-    # --- Exit Condition ---
-    key = cv2.waitKey(1) & 0xFF
-    if key == ord('q'):
+            if (
+                0 <= x < frame_w and 0 <= y < frame_h and
+                x + w <= frame_w and y + h <= frame_h and
+                w > 10 and h > 10
+            ):
+                lost_counter = 0
+                cv2.rectangle(detections_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                label = f"Tracking: {class_name}, {confidence:.2f}"
+                cv2.putText(detections_image, label, (x, y - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+            else:
+                lost_counter += 1
+                cv2.putText(detections_image, f"Lost ({lost_counter})", (20, 60),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        else:
+            lost_counter += 1
+            cv2.putText(detections_image, f"Lost ({lost_counter})", (20, 60),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+
+        if lost_counter >= max_lost_frames:
+            print("[INFO] Tracker lost for too long, resetting...")
+            tracker = None
+            init_once = False
+            lost_counter = 0
+
+    # Show frame
+    cv2.imshow("RTDETR Tracking", detections_image)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         print("Exiting...")
         break
 
-# --- Cleanup ---
-print("Releasing resources...")
 cap.release()
 cv2.destroyAllWindows()
 print("Done.")
