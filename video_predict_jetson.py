@@ -19,9 +19,22 @@ model.model.half()
 
 # --- Initialize Webcam ---
 print("Starting webcam...")
-cap = cv2.VideoCapture("/dev/video0", cv2.CAP_V4L2)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+# cap = cv2.VideoCapture("/dev/video0", cv2.CAP_V4L2)
+# cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+# cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+pipeline = (
+    "v4l2src device=/dev/video0 ! "
+    "image/jpeg,width=1280,height=720,framerate=30/1 ! "
+    "nvv4l2decoder mjpeg=1 ! "
+    "nvvidconv ! "
+    "video/x-raw, format=BGRx ! "
+    "videoconvert ! "
+    "video/x-raw, format=BGR ! "
+    "appsink"
+)
+
+cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
 
 if not cap.isOpened():
     print("Error: Could not open webcam.")
