@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import supervision as sv
-from rfdetr import RFDETRBase
+from ultralytics import RTDETR
 
 def run_detection():
     # Load dataset using the COCO annotations.
@@ -10,7 +10,7 @@ def run_detection():
         annotations_path="./dataset/valid/_annotations.coco.json",
     )
 
-    model = RFDETRBase(pretrain_weights="./logs/checkpoint_best_total.pth")
+    model = RTDETR(pretrain_weights="./logs/checkpoint_best_total.pth")
 
     cap = cv2.VideoCapture(0)
     while True:

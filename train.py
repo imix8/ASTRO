@@ -1,5 +1,5 @@
-from rfdetr import RFDETRBase
+from ultralytics import RTDETR
 
-model = RFDETRBase()
+model = RTDETR("rtdetr-l.pt")
 
-model.train(dataset_dir="./dataset", epochs=50, batch_size=5, grad_accum_steps=4, lr=1e-4, output_dir="./logs", device="cuda")
+results = model.train(data="datasets/data.yaml", epochs=50, imgsz=640)
