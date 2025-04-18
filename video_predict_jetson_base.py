@@ -1,17 +1,22 @@
 import cv2
+import time
 import torch
 from ultralytics import RTDETR
 
 # --- CUDA Check ---
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"CUDA Available: {torch.cuda.is_available()}")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
-# --- Model Setup ---
-model = RTDETR('runs/detect/train/weights/best.pt')
-model.to(device)
-model.model.half()
+
+# Prevent automatic CUDA memory release
+torch.cuda.empty_cache = lambda: None
+
+MODEL_NAME = 'runs/detect/train/weights/best.pt'
+model = RTDETR(MODEL_NAME)
 
 # --- Initialize Webcam ---
+print("Starting webcam...")
 cap = cv2.VideoCapture("/dev/video0")
 
 if not cap.isOpened():
@@ -27,24 +32,25 @@ while True:
         print("Error: Failed to grab frame.")
         break
 
-    # Optional: Resize to smaller image for speed (320x320)
-    frame_resized = cv2.resize(frame, (320, 320))
+    # --- Perform Inference using Ultralytics ---
+    results = model(frame, verbose=False) # verbose=False silences Ultralytics console output per frame
 
-    # Convert to half precision (fp16)
-    frame_resized = frame_resized.astype('float16')
+    # --- Process and Draw Results ---
+    # `results[0].plot()` returns the frame with bounding boxes drawn directly
+    annotated_frame = results[0].plot()
 
-    # Inference
-    results = model(frame_resized, imgsz=320, device=device, verbose=False)
 
-    # Annotate (optional – this is slow!)
-    annotated = results[0].plot()
+    # --- Display the Resulting Frame ---
+    cv2.imshow("RTDETR Object Detection", annotated_frame)
 
-    # Display
-    cv2.imshow("RTDETR (Fast)", annotated)
-
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    # --- Exit Condition ---
+    key = cv2.waitKey(1) & 0xFF # Wait 1ms for a key press
+    if key == ord('q'):        # Press 'q' to quit
+        print("Exiting...")
         break
 
 # --- Cleanup ---
+print("Releasing resources...")
 cap.release()
 cv2.destroyAllWindows()
+print("Done.")
