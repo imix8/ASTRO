@@ -2,15 +2,15 @@ import os
 import time
 import cv2
 import matplotlib.pyplot as plt
-from ultralytics import YOLO
+from ultralytics import RTDETR
 
 def image_predict():
     # Path to your image directory
     IMAGE_DIR = './datasets/valid/images'
     MODEL_PATH = 'runs/detect/train/weights/best.pt'
 
-    # Load the YOLOv8 model
-    model = YOLO(MODEL_PATH)
+    # Load the RTDETR model
+    model = RTDETR(MODEL_PATH)
 
     # Supported image formats
     image_extensions = ('.jpg', '.jpeg', '.png', '.bmp')
@@ -39,7 +39,7 @@ def image_predict():
 
         # Annotate and show image
         annotated = results.plot()
-        cv2.imshow("YOLOv8 Inference", annotated)
+        cv2.imshow("RTDETR Inference", annotated)
         key = cv2.waitKey(0)
         if key == ord('q'):
             break
@@ -52,7 +52,7 @@ def image_predict():
     plt.plot(range(len(elapsed_times)), elapsed_times, marker='o')
     plt.xlabel("Image Index")
     plt.ylabel("Inference Time (seconds)")
-    plt.title("YOLOv8 Inference Time per Image")
+    plt.title("RTDETR Inference Time per Image")
     plt.grid(True)
     plt.tight_layout()
     plt.show()

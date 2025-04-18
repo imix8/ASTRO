@@ -1,23 +1,23 @@
 import cv2
-from ultralytics import YOLO
+from ultralytics import RTDETR
 import time
 
 # --- Configuration ---
 MODEL_NAME = 'runs/detect/train/weights/best.pt'
 
-# --- Load the YOLO model ---
+# --- Load the RTDETR model ---
 try:
-    model = YOLO(MODEL_NAME)
+    model = RTDETR(MODEL_NAME)
     print(f"Successfully loaded model: {MODEL_NAME}")
 except Exception as e:
-    print(f"Error loading YOLO model: {e}")
+    print(f"Error loading RTDETR model: {e}")
     print("Ensure you have internet access for the first run to download the model,")
     print("or place the model file in the correct directory if already downloaded.")
     exit()
 
 # --- Initialize Webcam ---
 print("Starting webcam...")
-cap = cv2.VideoCapture(0) # 0 is usually the default webcam
+cap = cv2.VideoCapture("dev/video0") # 0 is usually the default webcam
 
 if not cap.isOpened():
     print("Error: Could not open webcam.")
@@ -53,7 +53,7 @@ while True:
 
 
     # --- Display the Resulting Frame ---
-    cv2.imshow("YOLOv8 Object Detection", annotated_frame)
+    cv2.imshow("RTDETR Object Detection", annotated_frame)
 
     # --- Exit Condition ---
     key = cv2.waitKey(1) & 0xFF # Wait 1ms for a key press

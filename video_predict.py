@@ -1,5 +1,5 @@
 import cv2
-from ultralytics import YOLO
+from ultralytics import RTDETR
 import time
 
 # --- Configuration ---
@@ -7,7 +7,7 @@ MODEL_NAME = 'runs/detect/train/weights/best.pt'
 
 # --- Load the YOLO model ---
 try:
-    model = YOLO(MODEL_NAME)
+    model = RTDETR(MODEL_NAME)
     print(f"Successfully loaded model: {MODEL_NAME}")
 except Exception as e:
     print(f"Error loading YOLO model: {e}")

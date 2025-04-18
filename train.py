@@ -1,5 +1,5 @@
 # Import the YOLO class from the ultralytics library
-from ultralytics import YOLO
+from ultralytics import RTDETR
 
 # --- Configuration ---
 # Define the paths and training parameters
@@ -10,12 +10,12 @@ DATA_YAML_PATH = 'datasets/data.yaml'
 
 # Pre-trained model to start from (e.g., 'yolov8n.pt' for nano version)
 # The library will automatically download it if not found locally
-BASE_MODEL = 'yolov8n.pt'
+BASE_MODEL = 'rtdetr-l'
 
 # Training parameters
-NUM_EPOCHS = 150     # Number of training epochs
+NUM_EPOCHS = 100     # Number of training epochs
 IMAGE_SIZE = 640     # Input image size (square)
-BATCH_SIZE = 32      # Number of images per batch
+BATCH_SIZE = 5      # Number of images per batch
 
 # --- Main Training Function ---
 def train_yolo_model():
@@ -34,7 +34,7 @@ def train_yolo_model():
     try:
         # Load a pre-trained YOLO model
         # For training, you typically start from a pre-trained model like yolov8n.pt
-        model = YOLO(BASE_MODEL)
+        model = RTDETR(BASE_MODEL)
 
         # Train the model using the specified dataset and parameters
         # The results (including trained weights, logs, etc.) will be saved
