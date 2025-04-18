@@ -25,8 +25,7 @@ print("Starting webcam...")
 
 pipeline = (
     "v4l2src device=/dev/video0 ! "
-    "image/jpeg,width=1280,height=720,framerate=30/1 ! "
-    "nvv4l2decoder mjpeg=1 ! "
+    "video/x-raw,format=YUY2,width=1280,height=720,framerate=30/1 ! "
     "nvvidconv ! "
     "video/x-raw, format=BGRx ! "
     "videoconvert ! "
