@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import supervision as sv
 from rfdetr import RFDETRBase
-import torch
 
 def run_detection_with_tracking():
     # Load dataset using the COCO annotations.
@@ -12,8 +11,7 @@ def run_detection_with_tracking():
     )
 
     model = RFDETRBase(pretrain_weights="./logs/checkpoint_best_total.pth")
-    model.to(torch.device("cuda"))
-
+\
     cap = cv2.VideoCapture("/dev/video0", cv2.CAP_V4L2)
 
     # Request MJPEG mode (faster than YUYV)
