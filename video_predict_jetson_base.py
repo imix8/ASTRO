@@ -14,22 +14,24 @@ torch.cuda.empty_cache = lambda: None
 
 MODEL_NAME = 'runs/detect/train/weights/best.pt'
 model = RTDETR(MODEL_NAME)
+model.to(device)
+model.model.half()  # Enable FP16 acceleration
 
 # --- Initialize Webcam ---
 print("Starting webcam...")
-# cap = cv2.VideoCapture("/dev/video0")
+cap = cv2.VideoCapture("/dev/video0")
 
 # --- GStreamer Pipeline for USB Camera (Hardware-accelerated) ---
-gst_pipeline = (
-    "v4l2src device=/dev/video0 ! "
-    "video/x-raw, width=640, height=480, framerate=30/1 ! "
-    "videoconvert ! "
-    "video/x-raw, format=BGR ! appsink"
-)
+# gst_pipeline = (
+#     "v4l2src device=/dev/video0 ! "
+#     "video/x-raw, width=640, height=480, framerate=30/1 ! "
+#     "videoconvert ! "
+#     "video/x-raw, format=BGR ! appsink"
+# )
 
 # --- OpenCV VideoCapture using GStreamer ---
-print("Starting webcam via GStreamer...")
-cap = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
+# print("Starting webcam via GStreamer...")
+# cap = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
 
 if not cap.isOpened():
     print("Error: Could not open webcam.")
