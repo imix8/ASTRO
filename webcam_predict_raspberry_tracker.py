@@ -14,7 +14,7 @@ def run_detection_with_tracking():
 
     model = RFDETRBase(pretrain_weights="./logs/checkpoint_best_total.pth")
 
-    cap = cv2.VideoCapture('/dev/video2')
+    cap = cv2.VideoCapture('/dev/video0')
     tracker = None
     init_once = False
 
