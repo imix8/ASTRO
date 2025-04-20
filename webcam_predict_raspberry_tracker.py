@@ -61,7 +61,7 @@ def run_detection_with_tracking():
         resolution_wh = (frame.shape[1], frame.shape[0]) if isinstance(frame, np.ndarray) else frame.size
         detections_image = frame.copy()
 
-        if frame_counter < 30 and (not init_once):
+        if frame_counter % 30 == 0 and (not init_once):
             frame_counter = 0
             detections = model.predict(frame, threshold=0.5)
 
