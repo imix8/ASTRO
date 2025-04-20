@@ -119,7 +119,7 @@ def run_detection_with_tracking():
                         command_text = "forward"
 
                     # === Send over serial ===
-                    if (command_text != last_command_text)
+                    if (command_text != last_command_text):
                         if arduino:
                             try:
                                 arduino.write((command_text + '\n').encode('utf-8'))
