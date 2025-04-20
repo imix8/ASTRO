@@ -8,11 +8,16 @@ import time
 def send_to_arduino(arduino, cmd, last_sent, cooldown=0.2):
     if time.time() - last_sent > cooldown:
         try:
-            print(f"[DEBUG] Sending command to Arduino: {cmd}")
+            print(f"[DEBUG] Time since last sent: {time.time() - last_sent}")
+            print(f"[DEBUG] Command to send: {cmd}")
             arduino.write((cmd + '\n').encode('utf-8'))
             arduino.flush()
             print(f"[SEND] Sent command: {cmd}")
             return time.time()  # updated timestamp
+        except serial.SerialTimeoutException as e:
+            print(f"[ERROR] Serial timeout occurred while sending command: {e}")
+        except serial.SerialException as e:
+            print(f"[ERROR] Serial communication error: {e}")
         except Exception as e:
             print(f"[ERROR] Failed to send to Arduino: {e}")
     return last_sent
@@ -39,7 +44,7 @@ def run_detection_with_tracking():
     # === Connect to Arduino ===
     try:
         print("[DEBUG] Attempting to connect to Arduino...")
-        arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+        arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # Set timeout to 1 second
         time.sleep(2)
         print("[INFO] Serial connection established.")
         last_sent = time.time()
@@ -146,6 +151,7 @@ def run_detection_with_tracking():
                     # Limit to 1 command every 200ms
                     if arduino:
                         last_sent = send_to_arduino(arduino, cmd, last_sent)
+                        time.sleep(0.1)  # Optional: Add small delay after sending the command
                 else:
                     lost_counter += 1
                     print(f"[WARN] Invalid tracker box or out of bounds. Lost counter: {lost_counter}")
