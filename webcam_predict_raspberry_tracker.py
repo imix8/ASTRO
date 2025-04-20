@@ -5,22 +5,26 @@ from rfdetr import RFDETRBase
 import serial
 import time
 
-def send_to_arduino(arduino, cmd, last_sent, cooldown=0.4):
-    if time.time() - last_sent > cooldown:
+def send_to_arduino(arduino, cmd, last_sent_time, last_cmd, cooldown=0.8):
+    if time.time() - last_sent_time > cooldown and cmd != last_cmd:
         try:
-            # print(f"[DEBUG] Time since last sent: {time.time() - last_sent}")
+            # Clear input and output buffers before sending the command
+            arduino.reset_input_buffer()
+            arduino.reset_output_buffer()
+            
+            # print(f"[DEBUG] Time since last sent: {time.time() - last_sent_time}")
             # print(f"[DEBUG] Command to send: {cmd}")
             arduino.write((cmd + '\n').encode('utf-8'))
             arduino.flush()
             print(f"[SEND] Sent command: {cmd}")
-            return time.time()  # updated timestamp
+            return time.time(), cmd  # Updated timestamp and last command sent
         except serial.SerialTimeoutException as e:
             print(f"[ERROR] Serial timeout occurred while sending command: {e}")
         except serial.SerialException as e:
             print(f"[ERROR] Serial communication error: {e}")
         except Exception as e:
             print(f"[ERROR] Failed to send to Arduino: {e}")
-    return last_sent
+    return last_sent_time, last_cmd
 
 
 def run_detection_with_tracking():
@@ -47,11 +51,13 @@ def run_detection_with_tracking():
         arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # Set timeout to 1 second
         time.sleep(2)
         # print("[INFO] Serial connection established.")
-        last_sent = time.time()
+        last_sent_time = time.time()
+        last_cmd = ""  # Initialize last command sent
     except Exception as e:
         # print(f"[ERROR] Could not connect to Arduino: {e}")
         arduino = None
-        last_sent = 0
+        last_sent_time = 0
+        last_cmd = ""
 
     while True:
         # === Capture frame ===
@@ -148,9 +154,9 @@ def run_detection_with_tracking():
                     # print(f"[DEBUG] Command determined: {cmd}")
 
                     # === Send command ===
-                    # Limit to 1 command every 200ms
+                    # Limit to 1 command every 800ms
                     if arduino:
-                        last_sent = send_to_arduino(arduino, cmd, last_sent)
+                        last_sent_time, last_cmd = send_to_arduino(arduino, cmd, last_sent_time, last_cmd)
                         time.sleep(0.1)  # Optional: Add small delay after sending the command
                 else:
                     lost_counter += 1
