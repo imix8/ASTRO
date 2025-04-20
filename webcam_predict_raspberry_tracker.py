@@ -89,7 +89,11 @@ def run_detection_with_tracking():
                     w > 10 and h > 10
                 ):
                     lost_counter = 0  # Reset counter on valid update
-
+                    cv2.rectangle(detections_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    label = f"Tracking: {class_name}, {confidence:.2f}"
+                    cv2.putText(detections_image, label, (x, y - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                    
                     center_x = x + w // 2
                     center_y = y + h // 2
                     region_left = frame_w // 3
@@ -114,11 +118,7 @@ def run_detection_with_tracking():
                             print(f"[SEND] Sent command: {bin(command)}")
                         except Exception as e:
                             print(f"[ERROR] Failed to send to Arduino: {e}")
-
-                    cv2.rectangle(detections_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    label = f"Tracking: {class_name}, {confidence:.2f}"
-                    cv2.putText(detections_image, label, (x, y - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                            
                 else:
                     lost_counter += 1
                     cv2.putText(detections_image, f"Lost ({lost_counter})", (20, 60),

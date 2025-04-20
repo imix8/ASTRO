@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import supervision as sv
 from rfdetr import RFDETRBase
+import serial
+import time
 
 def run_detection_with_tracking():
     # Load dataset using the COCO annotations.
@@ -15,6 +17,15 @@ def run_detection_with_tracking():
     cap = cv2.VideoCapture(0)
     tracker = None
     init_once = False
+
+    # Serial connection to Arduino
+    # try:
+    #     arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+    #     time.sleep(2)  # Wait for Arduino to initialize
+    #     print("[INFO] Serial connection established.")
+    # except Exception as e:
+    #     print(f"[ERROR] Could not connect to Arduino: {e}")
+    #     arduino = None
 
     while True:
         success, frame = cap.read()
@@ -107,7 +118,13 @@ def run_detection_with_tracking():
                         action = "Forward"
 
                     print(f"[COMMAND] Action: {action} → Command Sent to Arduino: {bin(command)}")
-
+                    # === Send over serial ===
+                    # if arduino:
+                    #     try:
+                    #         arduino.write(bytes([command]))
+                    #         print(f"[SEND] Sent command: {bin(command)}")
+                    #     except Exception as e:
+                    #         print(f"[ERROR] Failed to send to Arduino: {e}")
                 else:
                     lost_counter += 1
                     cv2.putText(detections_image, f"Lost ({lost_counter})", (20, 60),
