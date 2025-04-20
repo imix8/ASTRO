@@ -31,33 +31,31 @@ void loop() {
     String cmd = Serial.readStringUntil('\n');
 
     if (cmd == "right") {
-      Serial.println("Input 000: Turn RIGHT");
+      Serial.println("Input right");
       digitalWrite(dir1, LOW); // Left motor forward
       digitalWrite(dir2, LOW); // Right motor backward
       stepBothMotors();
     } else if (cmd == "left") {
-      Serial.println("Input 001: Turn LEFT");
+      Serial.println("Input left");
       digitalWrite(dir1, HIGH); // Left motor backward
       digitalWrite(dir2, HIGH); // Right motor forward
       stepBothMotors();
     } else if (cmd == "forward") {
-      Serial.println("Input 010: Move FORWARD");
+      Serial.println("Input forward");
       digitalWrite(dir1, LOW); // Both forward
       digitalWrite(dir2, HIGH);
       stepBothMotors();
     } else if (cmd == "backward") {
-      Serial.println("Input 011: Move BACKWARD");
+      Serial.println("Input backwardD");
       digitalWrite(dir1, HIGH); // Both backward
       digitalWrite(dir2, LOW);
       stepBothMotors();
     } else if (cmd == "stop_servo") {
-      Serial.println("Input 111: STOP");
+      Serial.println("Input stop_servo");
       delay(500); // Short pause
     } else {
       Serial.println("Invalid direction input");
     }
-
-    Serial.println("done");
   }
 }
 
