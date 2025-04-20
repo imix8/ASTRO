@@ -101,27 +101,29 @@ def run_detection_with_tracking():
 
                     # === Determine 3-bit command ===
                     if center_y < 60:
-                        # command = 0b011  # Backward
-                        command_text = "backward"
+                        cmd = "backward"
                     elif center_x < region_left:
-                        # command = 0b001  # Turn left
-                        command_text = "left"
+                        cmd = "left"
                     elif center_x > region_right:
-                        # command = 0b000  # Turn right
-                        command_text = "right"
+                        cmd = "right"
                     elif y + h > frame_h - 50:
-                        # command = 0b111  # Stop + servo
-                        command_text = "stop_servo"
+                        cmd = "stop_servo"
                     else:
-                        # command = 0b010  # Forward
-                        command_text = "forward"
+                        cmd = "forward"
 
                     # === Send over serial ===
                     if arduino:
                         try:
-                            arduino.write((command_text + '\n').encode('utf-8'))
+                            arduino.write((cmd + '\n').encode('utf-8'))
                             # arduino.write(bytes([command]))
-                            print(f"[SEND] Sent command: {command_text}")
+                            print(f"[SEND] Sent command: {cmd}")
+                            while True:
+                                response = arduino.readline().decode().strip()
+                                if response == "done":
+                                    print(f"Arduino acknowledged '{cmd}'")
+                                    break
+                                elif response != "":
+                                    print(f"Arduino says: {response}")
                         except Exception as e:
                             print(f"[ERROR] Failed to send to Arduino: {e}")
                             

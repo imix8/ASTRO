@@ -1,10 +1,5 @@
 #include <Servo.h>
 
-// Servo pins
-Servo servo1; // D2
-Servo servo2; // D3
-Servo servo3; // D4
-
 // Stepper Motor 1
 const int ena1 = 5;
 const int dir1 = 6;
@@ -15,35 +10,7 @@ const int ena2 = 8;
 const int dir2 = 9;
 const int step2 = 10;
 
-// Simulated 3-bit inputs
-byte directionBits[] = {
-    0b000, // Turn RIGHT
-    0b001, // Turn LEFT
-    0b010, // FORWARD
-    0b011, // BACKWARD
-    0b111  // STOP + servo
-};
-
-byte servo1Input[] = {
-    0, 1, 0, 1, 0 // Used only when direction == 0b111
-};
-
-byte weightBits[] = {
-    0, 0, 0, 0, 1 // 0→1 transition triggers servo reset
-};
-
-int inputIndex = 0;
-int prevWeight = 0;
-
 void setup() {
-  // Servo setup
-  servo1.attach(2);
-  servo2.attach(3);
-  servo3.attach(4);
-  servo1.write(0);
-  servo2.write(0);
-  servo3.write(0);
-
   // Stepper setup
   pinMode(step1, OUTPUT);
   pinMode(dir1, OUTPUT);
@@ -56,84 +23,41 @@ void setup() {
   digitalWrite(ena2, LOW);
 
   Serial.begin(9600);
-  Serial.println("Robot system with 3-bit input started");
+  Serial.println("Stepper motor system started");
 }
 
 void loop() {
   if (Serial.available() > 0) {
     String cmd = Serial.readStringUntil('\n');
-    String last_cmd = cmd;
 
-    // String last_cmd = "forward"
-    // byte direction = directionBits[inputIndex];
-    byte servoInput = servo1Input[inputIndex];
-    // int weight = weightBits[inputIndex];
-
-    if (last_cmd == "right") {
-      // Turn RIGHT
+    if (cmd == "right") {
       Serial.println("Input 000: Turn RIGHT");
       digitalWrite(dir1, LOW); // Left motor forward
       digitalWrite(dir2, LOW); // Right motor backward
       stepBothMotors();
-    } else if (last_cmd == "left") {
-      // Turn LEFT
+    } else if (cmd == "left") {
       Serial.println("Input 001: Turn LEFT");
       digitalWrite(dir1, HIGH); // Left motor backward
       digitalWrite(dir2, HIGH); // Right motor forward
       stepBothMotors();
-    } else if (last_cmd == "forward") {
-      // FORWARD
+    } else if (cmd == "forward") {
       Serial.println("Input 010: Move FORWARD");
       digitalWrite(dir1, LOW); // Both forward
       digitalWrite(dir2, HIGH);
       stepBothMotors();
-    } else if (last_cmd == "backward") {
-      // BACKWARD
+    } else if (cmd == "backward") {
       Serial.println("Input 011: Move BACKWARD");
       digitalWrite(dir1, HIGH); // Both backward
       digitalWrite(dir2, LOW);
       stepBothMotors();
-    } else if (last_cmd == "stop_servo") {
-      // STOP + servo action
-      Serial.println("Input 111: STOP + Activate Servos");
-
-      delay(500); // Pause motion
-
-      // Servo2 & Servo3 to 90°
-      servo2.write(90);
-      servo3.write(90);
-      delay(500);
-
-      // Servo1 depending on input
-      if (servoInput == 0) {
-        Serial.println("servo1: rotate LEFT 45°");
-        servo1.write(45);
-      } else {
-        Serial.println("servo1: rotate RIGHT 45°");
-        servo1.write(135);
-      }
-
-      delay(1000);
+    } else if (cmd == "stop_servo") {
+      Serial.println("Input 111: STOP");
+      delay(500); // Short pause
     } else {
       Serial.println("Invalid direction input");
     }
 
-    // // Detect weight change from 0 → 1
-    // if (prevWeight == 0 && weight == 1) {
-    //   Serial.println("Weight detected → Resetting servos to 0°");
-    //   servo1.write(0);
-    //   servo2.write(0);
-    //   servo3.write(0);
-    // }
-
-    // prevWeight = weight;
-
-    // inputIndex++;
-    // if (inputIndex >= sizeof(directionBits)) {
-    //   inputIndex = sizeof(directionBits) - 1; // Stop at last input
-    // }
-
-    // delay(1000);
+    Serial.println("done");
   }
 }
 
