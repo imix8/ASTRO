@@ -50,15 +50,19 @@ def run_detection_with_tracking():
         arduino = None
         last_sent_time = 0
 
+    frame_counter = 0
+
     while True:
         success, frame = cap.read()
         if not success:
             break
-
+        
+        frame_counter += 1 
         resolution_wh = (frame.shape[1], frame.shape[0]) if isinstance(frame, np.ndarray) else frame.size
         detections_image = frame.copy()
 
-        if not init_once:
+        if frame_counter < 30 and (not init_once):
+            frame_counter = 0
             detections = model.predict(frame, threshold=0.5)
 
             if detections.xyxy.shape[0] > 0:
@@ -140,7 +144,7 @@ def run_detection_with_tracking():
                 cv2.putText(detections_image, f"Lost ({lost_counter})", (20, 60),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
-            if lost_counter >= 30:
+            if lost_counter >= 15:
                 tracker = None
                 init_once = False
                 lost_counter = 0
