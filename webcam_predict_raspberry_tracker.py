@@ -3,6 +3,7 @@ import numpy as np
 import supervision as sv
 from rfdetr import RFDETRBase
 import serial
+import time
 
 def run_detection_with_tracking():
     # Serial connection to Arduino
