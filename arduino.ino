@@ -18,6 +18,9 @@ const int servo1Pin = 2;
 const int servo2Pin = 3;
 const int servo3Pin = 4;
 
+// Conveyor belt control pin
+const int conveyorPin = 11;
+
 void setup() {
   // Stepper setup
   pinMode(step1, OUTPUT);
@@ -38,6 +41,10 @@ void setup() {
   servo1.write(70); // Initial position
   servo2.write(0);  // Initial position
   servo3.write(0);  // Initial position
+
+  // Conveyor setup
+  pinMode(conveyorPin, OUTPUT);
+  digitalWrite(conveyorPin, LOW); // Initially OFF
 
   Serial.begin(9600);
   Serial.println("Stepper motor system started");
@@ -82,12 +89,19 @@ void loop() {
         delay(15);
       }
 
+      // Start conveyor belt
+      digitalWrite(conveyorPin, HIGH);
+      Serial.println("Conveyor belt started");
+
     } else if (cmd == "sorting1") {
       Serial.println("Input sorting1");
       servo3.write(0);
     } else if (cmd == "sorting2") {
       Serial.println("Input sorting2");
       servo3.write(90);
+    } else if (cmd == "stop_conveyor") {
+      Serial.println("Input stop_conveyor");
+      digitalWrite(conveyorPin, LOW);
     } else {
       Serial.println("Invalid direction input");
     }
