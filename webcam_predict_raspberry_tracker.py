@@ -5,7 +5,7 @@ from rfdetr import RFDETRBase
 import serial
 import time
 
-def send_to_arduino(arduino, cmd, last_sent_time, cooldown=0.4):
+def send_to_arduino(arduino, cmd, last_sent_time, cooldown=0.8):
     if time.time() - last_sent_time > cooldown:
         try:
             # Clear input and output buffers before sending the command
