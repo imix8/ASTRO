@@ -140,9 +140,9 @@ void stepBothMotors() {
   for (int i = 0; i < 200; i++) {
     digitalWrite(step1, HIGH);
     digitalWrite(step2, HIGH);
-    delayMicroseconds(500);
+    delayMicroseconds(1000);
     digitalWrite(step1, LOW);
     digitalWrite(step2, LOW);
-    delayMicroseconds(500);
+    delayMicroseconds(1000);
   }
 }
