@@ -102,20 +102,25 @@ def run_detection_with_tracking():
                     # === Determine 3-bit command ===
                     if center_y < 60:
                         command = 0b011  # Backward
+                        command_text = "backward"
                     elif center_x < region_left:
                         command = 0b001  # Turn left
+                        command_text = "left"
                     elif center_x > region_right:
                         command = 0b000  # Turn right
+                        command_text = "right"
                     elif y + h > frame_h - 50:
                         command = 0b111  # Stop + servo
+                        command_text = "stop_servo"
                     else:
                         command = 0b010  # Forward
+                        command_text = "forward"
 
                     # === Send over serial ===
                     if arduino:
                         try:
-                            arduino.write(bytes([command]))
-                            print(f"[SEND] Sent command: {bin(command)}")
+                            arduino.write(command_text.encode('utf-8'))
+                            print(f"[SEND] Sent command: {command_text}")
                         except Exception as e:
                             print(f"[ERROR] Failed to send to Arduino: {e}")
                             

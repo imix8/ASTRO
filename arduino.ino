@@ -61,42 +61,42 @@ void setup() {
 
 void loop() {
   if (Serial.available()) {
-    byte command = Serial.read();
+    String command = Serial.readString();
 
-    byte direction = directionBits[inputIndex];
-    byte servoInput = servo1Input[inputIndex];
-    int weight = weightBits[inputIndex];
+    // byte direction = directionBits[inputIndex];
+    // byte servoInput = servo1Input[inputIndex];
+    // int weight = weightBits[inputIndex];
 
     switch (command) {
-    case 0b000: // Turn RIGHT
+    case (command == "right"): // Turn RIGHT
       Serial.println("Input 000: Turn RIGHT");
       digitalWrite(dir1, HIGH); // Left motor forward
       digitalWrite(dir2, LOW);  // Right motor backward
       stepBothMotors();
       break;
 
-    case 0b001: // Turn LEFT
+    case (command == "left"): // Turn LEFT
       Serial.println("Input 001: Turn LEFT");
       digitalWrite(dir1, LOW);  // Left motor backward
       digitalWrite(dir2, HIGH); // Right motor forward
       stepBothMotors();
       break;
 
-    case 0b010: // FORWARD
+    case (command = "forward"): // FORWARD
       Serial.println("Input 010: Move FORWARD");
       digitalWrite(dir1, HIGH); // Both forward
       digitalWrite(dir2, HIGH);
       stepBothMotors();
       break;
 
-    case 0b011: // BACKWARD
+    case (command == "backward"): // BACKWARD
       Serial.println("Input 011: Move BACKWARD");
       digitalWrite(dir1, LOW); // Both backward
       digitalWrite(dir2, LOW);
       stepBothMotors();
       break;
 
-    case 0b111: // STOP + servo action
+    case (command == "stop_servo"): // STOP + servo action
       Serial.println("Input 111: STOP + Activate Servos");
 
       delay(500); // Pause motion
@@ -123,22 +123,22 @@ void loop() {
       break;
     }
 
-    // Detect weight change from 0 → 1
-    if (prevWeight == 0 && weight == 1) {
-      Serial.println("Weight detected → Resetting servos to 0°");
-      servo1.write(0);
-      servo2.write(0);
-      servo3.write(0);
-    }
+    // // Detect weight change from 0 → 1
+    // if (prevWeight == 0 && weight == 1) {
+    //   Serial.println("Weight detected → Resetting servos to 0°");
+    //   servo1.write(0);
+    //   servo2.write(0);
+    //   servo3.write(0);
+    // }
 
-    prevWeight = weight;
+    // prevWeight = weight;
 
-    inputIndex++;
-    if (inputIndex >= sizeof(directionBits)) {
-      inputIndex = sizeof(directionBits) - 1; // Stop at last input
-    }
+    // inputIndex++;
+    // if (inputIndex >= sizeof(directionBits)) {
+    //   inputIndex = sizeof(directionBits) - 1; // Stop at last input
+    // }
 
-    delay(1000);
+    // delay(1000);
   }
 }
 
