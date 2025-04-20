@@ -151,6 +151,7 @@ def run_detection_with_tracking():
                 tracker = None
                 init_once = False
                 lost_counter = 0
+                frame_counter = 1
 
         cv2.imshow("Webcam Tracking", detections_image)
         if cv2.waitKey(1) & 0xFF == ord('q'):
