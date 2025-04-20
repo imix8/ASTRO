@@ -67,36 +67,32 @@ void loop() {
     // byte servoInput = servo1Input[inputIndex];
     // int weight = weightBits[inputIndex];
 
-    switch (command) {
-    case (command == "right"): // Turn RIGHT
+    if (command == "right") {
+      // Turn RIGHT
       Serial.println("Input 000: Turn RIGHT");
       digitalWrite(dir1, HIGH); // Left motor forward
       digitalWrite(dir2, LOW);  // Right motor backward
       stepBothMotors();
-      break;
-
-    case (command == "left"): // Turn LEFT
+    } else if (command == "left") {
+      // Turn LEFT
       Serial.println("Input 001: Turn LEFT");
       digitalWrite(dir1, LOW);  // Left motor backward
       digitalWrite(dir2, HIGH); // Right motor forward
       stepBothMotors();
-      break;
-
-    case (command = "forward"): // FORWARD
+    } else if (command = "forward") {
+      // FORWARD
       Serial.println("Input 010: Move FORWARD");
       digitalWrite(dir1, HIGH); // Both forward
       digitalWrite(dir2, HIGH);
       stepBothMotors();
-      break;
-
-    case (command == "backward"): // BACKWARD
+    } else if (command == "backward") {
+      // BACKWARD
       Serial.println("Input 011: Move BACKWARD");
       digitalWrite(dir1, LOW); // Both backward
       digitalWrite(dir2, LOW);
       stepBothMotors();
-      break;
-
-    case (command == "stop_servo"): // STOP + servo action
+    } else if (command == "stop_servo") {
+      // STOP + servo action
       Serial.println("Input 111: STOP + Activate Servos");
 
       delay(500); // Pause motion
@@ -117,8 +113,7 @@ void loop() {
 
       delay(1000);
       break;
-
-    default:
+    } else {
       Serial.println("Invalid direction input");
       break;
     }
