@@ -26,9 +26,7 @@ def run_detection_with_tracking():
     except Exception as e:
         print(f"[ERROR] Could not connect to Arduino: {e}")
         arduino = None
-
-    last_command_text = ""
-
+    
     while True:
         success, frame = cap.read()
         if not success:
@@ -119,15 +117,13 @@ def run_detection_with_tracking():
                         command_text = "forward"
 
                     # === Send over serial ===
-                    if (command_text != last_command_text):
-                        if arduino:
-                            try:
-                                arduino.write((command_text + '\n').encode('utf-8'))
-                                # arduino.write(bytes([command]))
-                                last_command_text = command_text
-                                print(f"[SEND] Sent command: {command_text}")
-                            except Exception as e:
-                                print(f"[ERROR] Failed to send to Arduino: {e}")
+                    if arduino:
+                        try:
+                            arduino.write((command_text + '\n').encode('utf-8'))
+                            # arduino.write(bytes([command]))
+                            print(f"[SEND] Sent command: {command_text}")
+                        except Exception as e:
+                            print(f"[ERROR] Failed to send to Arduino: {e}")
                             
                 else:
                     lost_counter += 1
