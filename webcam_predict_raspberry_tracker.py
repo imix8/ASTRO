@@ -5,6 +5,19 @@ from rfdetr import RFDETRBase
 import serial
 import time
 
+def send_to_arduino(arduino, cmd, last_sent, cooldown=0.2):
+    if time.time() - last_sent > cooldown:
+        try:
+            print(f"[DEBUG] Sending command to Arduino: {cmd}")
+            arduino.write((cmd + '\n').encode('utf-8'))
+            arduino.flush()
+            print(f"[SEND] Sent command: {cmd}")
+            return time.time()  # updated timestamp
+        except Exception as e:
+            print(f"[ERROR] Failed to send to Arduino: {e}")
+    return last_sent
+
+
 def run_detection_with_tracking():
     # === Load COCO dataset ===
     print("[DEBUG] Loading dataset...")
@@ -29,9 +42,11 @@ def run_detection_with_tracking():
         arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
         time.sleep(2)
         print("[INFO] Serial connection established.")
+        last_sent = time.time()
     except Exception as e:
         print(f"[ERROR] Could not connect to Arduino: {e}")
         arduino = None
+        last_sent = 0
 
     while True:
         # === Capture frame ===
@@ -128,13 +143,9 @@ def run_detection_with_tracking():
                     print(f"[DEBUG] Command determined: {cmd}")
 
                     # === Send command ===
+                    # Limit to 1 command every 200ms
                     if arduino:
-                        try:
-                            print(f"[DEBUG] Sending command to Arduino: {cmd}")
-                            arduino.write((cmd + '\n').encode('utf-8'))
-                            print(f"[SEND] Sent command: {cmd}")
-                        except Exception as e:
-                            print(f"[ERROR] Failed to send to Arduino: {e}")
+                        last_sent = send_to_arduino(arduino, cmd, last_sent)
                 else:
                     lost_counter += 1
                     print(f"[WARN] Invalid tracker box or out of bounds. Lost counter: {lost_counter}")
