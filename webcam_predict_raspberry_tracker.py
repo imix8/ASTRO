@@ -96,7 +96,7 @@ def run_detection_with_tracking():
                     else:
                         print("[WARN] Ignoring detection with invalid size")
             else:
-                frame_counter += 1
+                frame_counter = (frame_counter + 1) % 30
                 print(f"frame_counter: {frame_counter}")
         else:
             success, box = tracker.update(frame)
