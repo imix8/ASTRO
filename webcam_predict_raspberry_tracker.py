@@ -57,44 +57,46 @@ def run_detection_with_tracking():
         if not success:
             break
         
-        frame_counter += 1 
         resolution_wh = (frame.shape[1], frame.shape[0]) if isinstance(frame, np.ndarray) else frame.size
         detections_image = frame.copy()
 
-        if frame_counter % 30 == 0 and (not init_once):
-            frame_counter = 0
-            detections = model.predict(frame, threshold=0.5)
+        if not init_once:
+            if (frame_counter % 30 == 0):
+                detections = model.predict(frame, threshold=0.5)
 
-            if detections.xyxy.shape[0] > 0:
-                x1, y1, x2, y2 = detections.xyxy[0].astype(int)
-                w, h = x2 - x1, y2 - y1
+                if detections.xyxy.shape[0] > 0:
+                    x1, y1, x2, y2 = detections.xyxy[0].astype(int)
+                    w, h = x2 - x1, y2 - y1
 
-                if w > 5 and h > 5:
-                    cv2.rectangle(detections_image, (x1, y1), (x1 + w, y1 + h), (0, 0, 255), 2)
+                    if w > 5 and h > 5:
+                        cv2.rectangle(detections_image, (x1, y1), (x1 + w, y1 + h), (0, 0, 255), 2)
 
-                    tracker = cv2.TrackerKCF_create()
-                    tracker.init(frame, (x1, y1, w, h))
+                        tracker = cv2.TrackerKCF_create()
+                        tracker.init(frame, (x1, y1, w, h))
 
-                    class_id = detections.class_id[0]
-                    confidence = detections.confidence[0]
-                    class_name = ds.classes[class_id]
-                    init_once = True
+                        class_id = detections.class_id[0]
+                        confidence = detections.confidence[0]
+                        class_name = ds.classes[class_id]
+                        init_once = True
 
-                    bbox_annotator = sv.BoxAnnotator(thickness=2)
-                    label_annotator = sv.LabelAnnotator(
-                        text_color=sv.Color.BLACK,
-                        text_scale=sv.calculate_optimal_text_scale(resolution_wh),
-                        text_thickness=2,
-                        smart_position=True
-                    )
-                    detections_labels = [
-                        f"{ds.classes[class_id]} {confidence:.2f}"
-                        for class_id, confidence in zip(detections.class_id, detections.confidence)
-                    ]
-                    detections_image = bbox_annotator.annotate(detections_image, detections)
-                    detections_image = label_annotator.annotate(detections_image, detections, detections_labels)
-                else:
-                    print("[WARN] Ignoring detection with invalid size")
+                        bbox_annotator = sv.BoxAnnotator(thickness=2)
+                        label_annotator = sv.LabelAnnotator(
+                            text_color=sv.Color.BLACK,
+                            text_scale=sv.calculate_optimal_text_scale(resolution_wh),
+                            text_thickness=2,
+                            smart_position=True
+                        )
+                        
+                        detections_labels = [
+                            f"{ds.classes[class_id]} {confidence:.2f}"
+                            for class_id, confidence in zip(detections.class_id, detections.confidence)
+                        ]
+                        detections_image = bbox_annotator.annotate(detections_image, detections)
+                        detections_image = label_annotator.annotate(detections_image, detections, detections_labels)
+                    else:
+                        print("[WARN] Ignoring detection with invalid size")
+            else:
+                frame_counter += 1
         else:
             success, box = tracker.update(frame)
 
