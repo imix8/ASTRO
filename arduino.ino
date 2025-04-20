@@ -61,38 +61,39 @@ void setup() {
 
 void loop() {
   if (Serial.available() > 0) {
-    String command = Serial.readStringUntil('\n');
-    // String command = "forward"
+    String cmd = Serial.readStringUntil('\n');
+    String last_cmd = cmd;
 
+    // String last_cmd = "forward"
     // byte direction = directionBits[inputIndex];
     byte servoInput = servo1Input[inputIndex];
     // int weight = weightBits[inputIndex];
 
-    if (command == "right") {
+    if (last_cmd == "right") {
       // Turn RIGHT
       Serial.println("Input 000: Turn RIGHT");
       digitalWrite(dir1, LOW); // Left motor forward
       digitalWrite(dir2, LOW); // Right motor backward
       stepBothMotors();
-    } else if (command == "left") {
+    } else if (last_cmd == "left") {
       // Turn LEFT
       Serial.println("Input 001: Turn LEFT");
       digitalWrite(dir1, HIGH); // Left motor backward
       digitalWrite(dir2, HIGH); // Right motor forward
       stepBothMotors();
-    } else if (command == "forward") {
+    } else if (last_cmd == "forward") {
       // FORWARD
       Serial.println("Input 010: Move FORWARD");
       digitalWrite(dir1, LOW); // Both forward
       digitalWrite(dir2, HIGH);
       stepBothMotors();
-    } else if (command == "backward") {
+    } else if (last_cmd == "backward") {
       // BACKWARD
       Serial.println("Input 011: Move BACKWARD");
       digitalWrite(dir1, HIGH); // Both backward
       digitalWrite(dir2, LOW);
       stepBothMotors();
-    } else if (command == "stop_servo") {
+    } else if (last_cmd == "stop_servo") {
       // STOP + servo action
       Serial.println("Input 111: STOP + Activate Servos");
 
