@@ -6,16 +6,6 @@ import serial
 import time
 
 def run_detection_with_tracking():
-    # Serial connection to Arduino
-    try:
-        arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
-        time.sleep(2)  # Wait for Arduino to initialize
-        print("[INFO] Serial connection established.")
-    except Exception as e:
-        print(f"[ERROR] Could not connect to Arduino: {e}")
-        arduino = None
-
-
     # Load dataset using the COCO annotations.
     ds = sv.DetectionDataset.from_coco(
         images_directory_path="./dataset/valid",
@@ -27,6 +17,15 @@ def run_detection_with_tracking():
     cap = cv2.VideoCapture('/dev/video2')
     tracker = None
     init_once = False
+
+    # Serial connection to Arduino
+    try:
+        arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+        time.sleep(2)  # Wait for Arduino to initialize
+        print("[INFO] Serial connection established.")
+    except Exception as e:
+        print(f"[ERROR] Could not connect to Arduino: {e}")
+        arduino = None
 
     while True:
         success, frame = cap.read()
