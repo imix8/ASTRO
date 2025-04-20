@@ -86,7 +86,7 @@ def run_detection_with_tracking():
                             text_thickness=2,
                             smart_position=True
                         )
-                        
+
                         detections_labels = [
                             f"{ds.classes[class_id]} {confidence:.2f}"
                             for class_id, confidence in zip(detections.class_id, detections.confidence)
@@ -97,6 +97,7 @@ def run_detection_with_tracking():
                         print("[WARN] Ignoring detection with invalid size")
             else:
                 frame_counter += 1
+                print(f"frame_counter: {frame_counter}")
         else:
             success, box = tracker.update(frame)
 
