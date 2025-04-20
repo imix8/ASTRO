@@ -62,7 +62,7 @@ def run_detection_with_tracking():
 
         if not init_once:
             if (frame_counter % 30 == 0):
-                detections = model.predict(frame, threshold=0.5)
+                detections = model.predict(frame, threshold=0.6)
 
                 if detections.xyxy.shape[0] > 0:
                     x1, y1, x2, y2 = detections.xyxy[0].astype(int)
@@ -77,8 +77,19 @@ def run_detection_with_tracking():
                         class_id = detections.class_id[0]
                         confidence = detections.confidence[0]
                         class_name = ds.classes[class_id]
-                        init_once = True
 
+                        # === NEW: Send sorting command based on detected class ===
+                        if arduino:
+                            if class_name == "plastic_bottle":
+                                last_sent_time = send_to_arduino(arduino, "sorting1", last_sent_time)
+                            elif class_name == "aluminum_can":
+                                last_sent_time = send_to_arduino(arduino, "sorting2", last_sent_time)
+                            elif class_name == "paper_cup":
+                                last_sent_time = send_to_arduino(arduino, "sorting1", last_sent_time)
+                            elif class_name == "face_mask":
+                                last_sent_time = send_to_arduino(arduino, "sorting2", last_sent_time)
+                        
+                        init_once = True
                         bbox_annotator = sv.BoxAnnotator(thickness=2)
                         label_annotator = sv.LabelAnnotator(
                             text_color=sv.Color.BLACK,
@@ -97,7 +108,7 @@ def run_detection_with_tracking():
                         print("[WARN] Ignoring detection with invalid size")
             else:
                 frame_counter = (frame_counter + 1) % 30
-                print(f"frame_counter: {frame_counter}")
+                # print(f"frame_counter: {frame_counter}")
         else:
             success, box = tracker.update(frame)
 
