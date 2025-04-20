@@ -5,11 +5,11 @@ from rfdetr import RFDETRBase
 import serial
 import time
 
-def send_to_arduino(arduino, cmd, last_sent, cooldown=0.2):
+def send_to_arduino(arduino, cmd, last_sent, cooldown=0.4):
     if time.time() - last_sent > cooldown:
         try:
-            print(f"[DEBUG] Time since last sent: {time.time() - last_sent}")
-            print(f"[DEBUG] Command to send: {cmd}")
+            # print(f"[DEBUG] Time since last sent: {time.time() - last_sent}")
+            # print(f"[DEBUG] Command to send: {cmd}")
             arduino.write((cmd + '\n').encode('utf-8'))
             arduino.flush()
             print(f"[SEND] Sent command: {cmd}")
@@ -25,17 +25,17 @@ def send_to_arduino(arduino, cmd, last_sent, cooldown=0.2):
 
 def run_detection_with_tracking():
     # === Load COCO dataset ===
-    print("[DEBUG] Loading dataset...")
+    # print("[DEBUG] Loading dataset...")
     ds = sv.DetectionDataset.from_coco(
         images_directory_path="./dataset/valid",
         annotations_path="./dataset/valid/_annotations.coco.json",
     )
-    print("[DEBUG] Dataset loaded.")
+    # print("[DEBUG] Dataset loaded.")
 
     # === Load RFDETR model ===
-    print("[DEBUG] Loading model...")
+    # print("[DEBUG] Loading model...")
     model = RFDETRBase(pretrain_weights="./logs/checkpoint_best_total.pth")
-    print("[DEBUG] Model loaded.")
+    # print("[DEBUG] Model loaded.")
 
     cap = cv2.VideoCapture('/dev/video0')
     tracker = None
@@ -43,13 +43,13 @@ def run_detection_with_tracking():
 
     # === Connect to Arduino ===
     try:
-        print("[DEBUG] Attempting to connect to Arduino...")
+        # print("[DEBUG] Attempting to connect to Arduino...")
         arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # Set timeout to 1 second
         time.sleep(2)
-        print("[INFO] Serial connection established.")
+        # print("[INFO] Serial connection established.")
         last_sent = time.time()
     except Exception as e:
-        print(f"[ERROR] Could not connect to Arduino: {e}")
+        # print(f"[ERROR] Could not connect to Arduino: {e}")
         arduino = None
         last_sent = 0
 
@@ -57,7 +57,7 @@ def run_detection_with_tracking():
         # === Capture frame ===
         success, frame = cap.read()
         if not success:
-            print("[ERROR] Failed to read frame from camera.")
+            # print("[ERROR] Failed to read frame from camera.")
             break
 
         resolution_wh = (frame.shape[1], frame.shape[0]) if isinstance(frame, np.ndarray) else frame.size
@@ -65,24 +65,24 @@ def run_detection_with_tracking():
 
         if not init_once:
             # === Run model prediction ===
-            print("[DEBUG] Running detection...")
+            # print("[DEBUG] Running detection...")
             detections = model.predict(frame, threshold=0.5)
-            print(f"[DEBUG] Detection output: {detections.xyxy}")
+            # print(f"[DEBUG] Detection output: {detections.xyxy}")
 
             if detections.xyxy.shape[0] > 0:
                 x1, y1, x2, y2 = detections.xyxy[0].astype(int)
                 w, h = x2 - x1, y2 - y1
-                print(f"[DEBUG] Detected box: ({x1}, {y1}, {x2}, {y2})")
+                # print(f"[DEBUG] Detected box: ({x1}, {y1}, {x2}, {y2})")
 
                 if w > 5 and h > 5:
-                    print(f"[INFO] Initializing tracker with box: x={x1}, y={y1}, w={w}, h={h}")
+                    # print(f"[INFO] Initializing tracker with box: x={x1}, y={y1}, w={w}, h={h}")
                     cv2.rectangle(detections_image, (x1, y1), (x1 + w, y1 + h), (0, 0, 255), 2)
 
                     # === Create and init tracker ===
-                    print("[DEBUG] Creating tracker...")
+                    # print("[DEBUG] Creating tracker...")
                     tracker = cv2.TrackerKCF_create()
                     tracker.init(frame, (x1, y1, w, h))
-                    print("[DEBUG] Tracker initialized.")
+                    # print("[DEBUG] Tracker initialized.")
 
                     class_id = detections.class_id[0]
                     confidence = detections.confidence[0]
@@ -106,9 +106,9 @@ def run_detection_with_tracking():
                     print("[WARN] Ignoring detection with invalid size")
         else:
             # === Update tracker ===
-            print("[DEBUG] Updating tracker...")
+            # print("[DEBUG] Updating tracker...")
             success, box = tracker.update(frame)
-            print(f"[DEBUG] Tracker success: {success}, Box: {box}")
+            # print(f"[DEBUG] Tracker success: {success}, Box: {box}")
 
             if 'lost_counter' not in locals():
                 lost_counter = 0
@@ -134,7 +134,7 @@ def run_detection_with_tracking():
                     region_right = 2 * frame_w // 3
 
                     # === Generate command ===
-                    print("[DEBUG] Generating movement command...")
+                    # print("[DEBUG] Generating movement command...")
                     if center_y < 60:
                         cmd = "backward"
                     elif center_x < region_left:
@@ -145,7 +145,7 @@ def run_detection_with_tracking():
                         cmd = "stop_servo"
                     else:
                         cmd = "forward"
-                    print(f"[DEBUG] Command determined: {cmd}")
+                    # print(f"[DEBUG] Command determined: {cmd}")
 
                     # === Send command ===
                     # Limit to 1 command every 200ms
@@ -154,18 +154,18 @@ def run_detection_with_tracking():
                         time.sleep(0.1)  # Optional: Add small delay after sending the command
                 else:
                     lost_counter += 1
-                    print(f"[WARN] Invalid tracker box or out of bounds. Lost counter: {lost_counter}")
+                    # print(f"[WARN] Invalid tracker box or out of bounds. Lost counter: {lost_counter}")
                     cv2.putText(detections_image, f"Lost ({lost_counter})", (20, 60),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
             else:
                 lost_counter += 1
-                print(f"[WARN] Tracker update failed. Lost counter: {lost_counter}")
+                # print(f"[WARN] Tracker update failed. Lost counter: {lost_counter}")
                 cv2.putText(detections_image, f"Lost ({lost_counter})", (20, 60),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
             # === Reset tracker if lost too long ===
             if lost_counter >= 30:
-                print("[INFO] Tracker lost for too long, resetting...")
+                # print("[INFO] Tracker lost for too long, resetting...")
                 tracker = None
                 init_once = False
                 lost_counter = 0
@@ -173,16 +173,16 @@ def run_detection_with_tracking():
         # === Show the result ===
         cv2.imshow("Webcam Tracking", detections_image)
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            print("[INFO] Quit key pressed. Exiting loop.")
+            # print("[INFO] Quit key pressed. Exiting loop.")
             break
 
     # === Cleanup ===
-    print("[INFO] Releasing resources...")
+    # print("[INFO] Releasing resources...")
     cap.release()
     cv2.destroyAllWindows()
     if arduino:
         arduino.close()
-    print("[INFO] Shutdown complete.")
+    # print("[INFO] Shutdown complete.")
 
 if __name__ == '__main__':
     run_detection_with_tracking()
