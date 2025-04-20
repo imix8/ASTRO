@@ -2,8 +2,19 @@ import cv2
 import numpy as np
 import supervision as sv
 from rfdetr import RFDETRBase
+import serial
 
 def run_detection_with_tracking():
+    # Serial connection to Arduino
+    try:
+        arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+        time.sleep(2)  # Wait for Arduino to initialize
+        print("[INFO] Serial connection established.")
+    except Exception as e:
+        print(f"[ERROR] Could not connect to Arduino: {e}")
+        arduino = None
+
+
     # Load dataset using the COCO annotations.
     ds = sv.DetectionDataset.from_coco(
         images_directory_path="./dataset/valid",
@@ -78,6 +89,32 @@ def run_detection_with_tracking():
                     w > 10 and h > 10
                 ):
                     lost_counter = 0  # Reset counter on valid update
+
+                    center_x = x + w // 2
+                    center_y = y + h // 2
+                    region_left = frame_w // 3
+                    region_right = 2 * frame_w // 3
+
+                    # === Determine 3-bit command ===
+                    if center_y < 60:
+                        command = 0b011  # Backward
+                    elif center_x < region_left:
+                        command = 0b001  # Turn left
+                    elif center_x > region_right:
+                        command = 0b000  # Turn right
+                    elif y + h > frame_h - 50:
+                        command = 0b111  # Stop + servo
+                    else:
+                        command = 0b010  # Forward
+
+                    # === Send over serial ===
+                    if arduino:
+                        try:
+                            arduino.write(bytes([command]))
+                            print(f"[SEND] Sent command: {bin(command)}")
+                        except Exception as e:
+                            print(f"[ERROR] Failed to send to Arduino: {e}")
+
                     cv2.rectangle(detections_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
                     label = f"Tracking: {class_name}, {confidence:.2f}"
                     cv2.putText(detections_image, label, (x, y - 10),
@@ -105,6 +142,8 @@ def run_detection_with_tracking():
 
     cap.release()
     cv2.destroyAllWindows()
+    if arduino:
+        arduino.close()
 
 
 if __name__ == '__main__':

@@ -82,6 +82,32 @@ def run_detection_with_tracking():
                     label = f"Tracking: {class_name}, {confidence:.2f}"
                     cv2.putText(detections_image, label, (x, y - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                    
+                    # === Directional Logic ===
+                    center_x = x + w // 2
+                    center_y = y + h // 2
+                    region_left = frame_w // 3
+                    region_right = 2 * frame_w // 3
+
+                     # === Determine 3-bit command ===
+                    if center_y < 60:
+                        command = 0b011  # Backward
+                        action = "Backward"
+                    elif center_x < region_left:
+                        command = 0b001  # Turn left
+                        action = "Left"
+                    elif center_x > region_right:
+                        command = 0b000  # Turn right
+                        action = "Right"
+                    elif y + h > frame_h - 50:
+                        command = 0b111  # Stop + servo
+                        action = "Stop + servo"
+                    else:
+                        command = 0b010  # Forward
+                        action = "Forward"
+
+                    print(f"[COMMAND] Action: {action} → Command Sent to Arduino: {bin(command)}")
+
                 else:
                     lost_counter += 1
                     cv2.putText(detections_image, f"Lost ({lost_counter})", (20, 60),
