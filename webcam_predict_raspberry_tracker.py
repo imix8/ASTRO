@@ -119,7 +119,8 @@ def run_detection_with_tracking():
                     # === Send over serial ===
                     if arduino:
                         try:
-                            arduino.write(command_text.encode('utf-8'))
+                            arduino.write((command_text + '\n').encode('utf-8'))
+                            # arduino.write(bytes([command]))
                             print(f"[SEND] Sent command: {command_text}")
                         except Exception as e:
                             print(f"[ERROR] Failed to send to Arduino: {e}")

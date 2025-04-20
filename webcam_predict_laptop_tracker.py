@@ -19,13 +19,13 @@ def run_detection_with_tracking():
     init_once = False
 
     # Serial connection to Arduino
-    # try:
-    #     arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
-    #     time.sleep(2)  # Wait for Arduino to initialize
-    #     print("[INFO] Serial connection established.")
-    # except Exception as e:
-    #     print(f"[ERROR] Could not connect to Arduino: {e}")
-    #     arduino = None
+    try:
+        arduino = serial.Serial('COM4', 9600, timeout=1)
+        time.sleep(2)  # Wait for Arduino to initialize
+        print("[INFO] Serial connection established.")
+    except Exception as e:
+        print(f"[ERROR] Could not connect to Arduino: {e}")
+        arduino = None
 
     while True:
         success, frame = cap.read()
@@ -50,7 +50,7 @@ def run_detection_with_tracking():
                     cv2.rectangle(detections_image, (x1, y1), (x1 + w, y1 + h), (0, 0, 255), 2)
 
                     # Initialize CSRT tracker
-                    tracker = cv2.legacy.TrackerCSRT_create()
+                    tracker = cv2.TrackerKCF_create()
                     tracker.init(frame, (x1, y1, w, h))
                     class_id = detections.class_id[0]
                     confidence = detections.confidence[0]
@@ -100,31 +100,25 @@ def run_detection_with_tracking():
                     region_left = frame_w // 3
                     region_right = 2 * frame_w // 3
 
-                     # === Determine 3-bit command ===
                     if center_y < 60:
-                        command = 0b011  # Backward
-                        action = "Backward"
+                        command_str = "backward"
                     elif center_x < region_left:
-                        command = 0b001  # Turn left
-                        action = "Left"
+                        command_str = "left"
                     elif center_x > region_right:
-                        command = 0b000  # Turn right
-                        action = "Right"
+                        command_str = "right"
                     elif y + h > frame_h - 50:
-                        command = 0b111  # Stop + servo
-                        action = "Stop + servo"
+                        command_str = "stop_servo"
                     else:
-                        command = 0b010  # Forward
-                        action = "Forward"
+                        command_str = "forward"
 
-                    print(f"[COMMAND] Action: {action} → Command Sent to Arduino: {bin(command)}")
-                    # === Send over serial ===
-                    # if arduino:
-                    #     try:
-                    #         arduino.write(bytes([command]))
-                    #         print(f"[SEND] Sent command: {bin(command)}")
-                    #     except Exception as e:
-                    #         print(f"[ERROR] Failed to send to Arduino: {e}")
+                    print(f"[COMMAND] Action: {command_str}")
+
+                    if arduino:
+                        try:
+                            arduino.write(command_str.encode('utf-8'))
+                            print(f"[SEND] Sent command: {command_str}")
+                        except Exception as e:
+                            print(f"[ERROR] Failed to send to Arduino: {e}")
                 else:
                     lost_counter += 1
                     cv2.putText(detections_image, f"Lost ({lost_counter})", (20, 60),
@@ -148,6 +142,8 @@ def run_detection_with_tracking():
 
     cap.release()
     cv2.destroyAllWindows()
+    if arduino:
+        arduino.close()
 
 
 if __name__ == '__main__':
