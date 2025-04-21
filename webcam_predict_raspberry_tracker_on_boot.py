@@ -1,3 +1,6 @@
+import os
+os.environ["QT_QPA_PLATFORM"] = "offscreen"  # Headless-safe for Qt
+
 import cv2
 import numpy as np
 import supervision as sv
@@ -8,16 +11,12 @@ import time
 def send_to_arduino(arduino, cmd, last_sent_time, cooldown=0.8):
     if time.time() - last_sent_time > cooldown:
         try:
-            # Clear input and output buffers before sending the command
             arduino.reset_input_buffer()
             arduino.reset_output_buffer()
-            
-            # Send the command to the Arduino
             arduino.write((cmd + '\n').encode('utf-8'))
             arduino.flush()
             print(f"[SEND] Sent command: {cmd}")
-            
-            return time.time()  # updated timestamp
+            return time.time()
         except serial.SerialTimeoutException as e:
             print(f"[ERROR] Serial timeout occurred while sending command: {e}")
         except serial.SerialException as e:
@@ -28,14 +27,12 @@ def send_to_arduino(arduino, cmd, last_sent_time, cooldown=0.8):
 
 
 def run_detection_with_tracking():
-    # === Load COCO dataset ===
     print("[INFO] Loading dataset and model...")
     ds = sv.DetectionDataset.from_coco(
         images_directory_path="./dataset/valid",
         annotations_path="./dataset/valid/_annotations.coco.json",
     )
 
-    # === Load RFDETR model ===
     model = RFDETRBase(pretrain_weights="./logs/checkpoint_best_total.pth")
     print("[INFO] Model loaded successfully.")
 
@@ -43,10 +40,10 @@ def run_detection_with_tracking():
     if not cap.isOpened():
         print("[ERROR] Unable to access the webcam.")
         return
+
     tracker = None
     init_once = False
 
-    # === Connect to Arduino ===
     try:
         arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
         time.sleep(2)
@@ -78,8 +75,6 @@ def run_detection_with_tracking():
 
                     if w > 5 and h > 5:
                         print(f"[INFO] Detection found: {ds.classes[detections.class_id[0]]} ({w}x{h})")
-                        cv2.rectangle(detections_image, (x1, y1), (x1 + w, y1 + h), (0, 0, 255), 2)
-
                         tracker = cv2.TrackerKCF_create()
                         tracker.init(frame, (x1, y1, w, h))
 
@@ -87,7 +82,6 @@ def run_detection_with_tracking():
                         confidence = detections.confidence[0]
                         class_name = ds.classes[class_id]
 
-                        # === NEW: Send sorting command based on detected class ===
                         if arduino:
                             if class_name == "plastic_bottle":
                                 last_sent_time = send_to_arduino(arduino, "sorting1", last_sent_time)
@@ -97,7 +91,7 @@ def run_detection_with_tracking():
                                 last_sent_time = send_to_arduino(arduino, "sorting1", last_sent_time)
                             elif class_name == "face_mask":
                                 last_sent_time = send_to_arduino(arduino, "sorting2", last_sent_time)
-                        
+
                         init_once = True
                         bbox_annotator = sv.BoxAnnotator(thickness=2)
                         label_annotator = sv.LabelAnnotator(
@@ -117,7 +111,6 @@ def run_detection_with_tracking():
                         print("[WARN] Ignoring detection with invalid size")
             else:
                 frame_counter = (frame_counter + 1) % 30
-                # print(f"frame_counter: {frame_counter}")
         else:
             success, box = tracker.update(frame)
 
@@ -134,10 +127,6 @@ def run_detection_with_tracking():
                     w > 10 and h > 10
                 ):
                     lost_counter = 0
-                    cv2.rectangle(detections_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    label = f"Tracking: {class_name}, {confidence:.2f}"
-                    cv2.putText(detections_image, label, (x, y - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
                     center_x = x + w // 2
                     center_y = y + h // 2
@@ -158,17 +147,13 @@ def run_detection_with_tracking():
                     if arduino:
                         last_sent_time = send_to_arduino(arduino, cmd, last_sent_time)
                         time.sleep(0.1)
-                    
-                    print(f"[TRACKING] {label} - Action: {cmd}")
+
+                    print(f"[TRACKING] Tracking {class_name} ({confidence:.2f}) - Action: {cmd}")
                 else:
                     lost_counter += 1
-                    cv2.putText(detections_image, f"Lost ({lost_counter})", (20, 60),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                     print(f"[WARN] Tracker lost target - Lost count: {lost_counter}")
             else:
                 lost_counter += 1
-                cv2.putText(detections_image, f"Lost ({lost_counter})", (20, 60),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                 print(f"[WARN] Tracker failed update - Lost count: {lost_counter}")
 
             if lost_counter >= 15:
@@ -178,14 +163,17 @@ def run_detection_with_tracking():
                 lost_counter = 0
                 frame_counter = 1
 
-        cv2.imshow("Webcam Tracking", detections_image)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        # GUI-related lines removed for headless operation
+        # cv2.imshow("Webcam Tracking", detections_image)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
 
     cap.release()
-    cv2.destroyAllWindows()
     if arduino:
         arduino.close()
+        print("[INFO] Closed Arduino connection.")
+
+    print("[INFO] Detection system shutting down.")
 
 if __name__ == '__main__':
     run_detection_with_tracking()
