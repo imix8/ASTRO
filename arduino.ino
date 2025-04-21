@@ -21,6 +21,8 @@ const int servo3Pin = 4;
 // Conveyor belt control pin
 const int conveyorPin = 11;
 
+bool in_servo_stop_loop = false;
+
 void setup() {
   // Stepper setup
   pinMode(step1, OUTPUT);
@@ -44,7 +46,7 @@ void setup() {
 
   // Conveyor setup
   pinMode(conveyorPin, OUTPUT);
-  digitalWrite(conveyorPin, LOW); // Initially OFF
+  digitalWrite(conveyorPin, HIGH); // Initially OFF
 
   Serial.begin(9600);
   Serial.println("Stepper motor system started");
@@ -76,23 +78,37 @@ void loop() {
       stepBothMotors();
     } else if (cmd == "stop_servo") {
       Serial.println("Input stop_servo");
+      if (!in_servo_stop_loop) {
+        in_servo_stop_loop = true;
+        // Move servo1 from 70 → 0
+        // for (int angle = 70; angle >= 0; angle--) {
+        //   servo1.write(angle);
+        //   delay(15);
+        // }
 
-      // Move servo1 from 70 → 0
-      for (int angle = 70; angle >= 0; angle--) {
-        servo1.write(angle);
-        delay(15);
+        // // Move servo2 from 0 → 70
+        // for (int angle = 0; angle <= 70; angle++) {
+        //   servo2.write(angle);
+        //   delay(15);
+        // }
+
+        for (int angle = 0; angle <= 70; angle++) {
+          servo1.write(70 - angle);
+          servo2.write(angle);
+          delay(15);
+        }
+
+        // Start conveyor belt
+        digitalWrite(conveyorPin, LOW);
+        Serial.println("Conveyor belt started");
+
+        delay(10000);
+
+        digitalWrite(conveyorPin, HIGH);
+        servo1.write(70); // Initial position
+        servo2.write(0);  // Initial position
+        in_servo_stop_loop = false;
       }
-
-      // Move servo2 from 0 → 70
-      for (int angle = 0; angle <= 70; angle++) {
-        servo2.write(angle);
-        delay(15);
-      }
-
-      // Start conveyor belt
-      digitalWrite(conveyorPin, HIGH);
-      Serial.println("Conveyor belt started");
-
     } else if (cmd == "sorting1") {
       Serial.println("Input sorting1");
       servo3.write(0);
@@ -101,7 +117,7 @@ void loop() {
       servo3.write(90);
     } else if (cmd == "stop_conveyor") {
       Serial.println("Input stop_conveyor");
-      digitalWrite(conveyorPin, LOW);
+      digitalWrite(conveyorPin, HIGH);
     } else {
       Serial.println("Invalid direction input");
     }
